@@ -17,19 +17,25 @@
 						 (gnu packages sphinx)
 						 (gnu packages bioinformatics)
 						 (gnu packages xorg)
+						 (gnu packages gtk)
+						 (gnu packages pulseaudio)
+						 (gnu packages time)
+						 (gnu packages mpd)
+						 (gnu packages freedesktop)
+						 (gnu packages pkg-config)
 						 )
 
 (define-public my-python-xcffib
   (package
     (name "my-python-xcffib")
-    (version "0.11.1")
+    (version "1.5.0")
     (source
      (origin
       (method url-fetch)
       (uri (pypi-uri "xcffib" version))
       (sha256
        (base32
-        "0nkglsm9nbhv238iagmmsjcz6lf1yfdvp5kmspphdj385vz9r50j"))))
+        "1k0sd7dpfdp5pxbzsq5p3kvjv8q7hkhd2sv0vv74yyzry9jr8p59"))))
     (build-system python-build-system)
     (inputs
      (list libxcb))
@@ -62,3 +68,67 @@
      "Xcffib is a replacement for xpyb, an XCB Python bindings.  It adds
 support for Python 3 and PyPy.  It is based on cffi.")
     (license license:expat)))
+
+
+(define-public my-qtile
+  (package
+    (name "qtile")
+    (version "0.26.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "qtile" version))
+        (sha256
+          (base32 "1d86b1znm1ndzrnpd3g2b19dqgsyp4js8gydw3hqqypnvfa6z01c"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f ; Tests require Xvfb and writable temp/cache space
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-paths
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "libqtile/pangocffi.py"
+               (("^gobject = ffi.dlopen.*")
+                 (string-append "gobject = ffi.dlopen(\""
+                  (assoc-ref inputs "glib") "/lib/libgobject-2.0.so.0\")\n"))
+                (("^pango = ffi.dlopen.*")
+                 (string-append "pango = ffi.dlopen(\""
+                  (assoc-ref inputs "pango") "/lib/libpango-1.0.so.0\")\n"))
+                (("^pangocairo = ffi.dlopen.*")
+                 (string-append "pangocairo = ffi.dlopen(\""
+                  (assoc-ref inputs "pango") "/lib/libpangocairo-1.0.so.0\")\n")))))
+       (add-after 'install 'install-xsession
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (xsessions (string-append out "/share/xsessions"))
+                    (qtile (string-append out "/bin/qtile start")))
+               (mkdir-p xsessions)
+               (copy-file "resources/qtile.desktop" (string-append xsessions "/qtile.desktop"))
+               (substitute* (string-append xsessions "/qtile.desktop")
+                 (("qtile start") qtile))))))))
+    (inputs
+      (list glib pango pulseaudio))
+    (propagated-inputs
+      (list python-cairocffi
+            python-cffi
+            python-dateutil
+            python-dbus-next
+            python-iwlib
+            python-keyring
+            python-mpd2
+            python-pyxdg
+            my-python-xcffib))
+    (native-inputs
+      (list pkg-config
+            python-flake8
+            python-pep8-naming
+            python-psutil
+            python-pytest-cov
+            python-setuptools-scm))
+    (home-page "http://qtile.org")
+    (synopsis "Hackable tiling window manager written and configured in Python")
+    (description "Qtile is simple, small, and extensible.  It's easy to write
+your own layouts, widgets, and built-in commands.")
+    (license license:expat)))
+
+		
