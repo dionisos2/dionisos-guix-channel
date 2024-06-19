@@ -72,7 +72,7 @@ support for Python 3 and PyPy.  It is based on cffi.")
 
 (define-public my-qtile
   (package
-    (name "qtile")
+    (name "my-qtile")
     (version "0.26.0")
     (source
       (origin
