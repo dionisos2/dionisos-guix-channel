@@ -23,6 +23,21 @@
 						 (gnu packages mpd)
 						 (gnu packages freedesktop)
 						 (gnu packages pkg-config)
+						 (guix git-download)
+						 (gnu packages linux)
+						 (gnu packages video)
+						 (gnu packages xiph)
+						 (gnu packages fontutils)
+						 (gnu packages vulkan)
+						 (gnu packages xdisorg)
+						 (gnu packages xml)
+						 (gnu packages tls)
+						 (gnu packages gl)
+						 (gnu packages audio)
+						 (gnu packages qt)
+						 (gnu packages sdl)
+						 (gnu packages compression)
+						 (gnu packages base)
 						 )
 
 (define-public my-python-xcffib
@@ -131,4 +146,99 @@ support for Python 3 and PyPy.  It is based on cffi.")
 your own layouts, widgets, and built-in commands.")
     (license license:expat)))
 
-		
+
+(define-public my-retroarch
+  (package
+    (name "my-retroarch")
+    (version "1.19.1")
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/libretro/RetroArch")
+             (commit (string-append "v" version))))
+       (file-name (git-file-name name version))
+       (sha256
+        ;; (base32 "0wdl9zrb1gpqgrxxmv6fida1si1s5g6061aja9dm0hnbpa8cbsdq"))))
+				(base32 "15nh4y4vpf4n1ryhiy4fwvzn5xz5idzfzn9fsi5v9hzp25vbjmrm"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f                      ; no tests
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (etc (string-append out "/etc"))
+                    (vulkan (assoc-ref inputs "vulkan-loader"))
+                    (wayland-protocols (assoc-ref inputs "wayland-protocols")))
+               ;; Hard-code some store file names.
+               (substitute* "gfx/common/vulkan_common.c"
+                 (("libvulkan.so") (string-append vulkan "/lib/libvulkan.so")))
+               (substitute* "gfx/common/wayland/generate_wayland_protos.sh"
+                 (("/usr/local/share/wayland-protocols")
+                 (string-append wayland-protocols "/share/wayland-protocols")))
+
+               ;; Without HLSL, we can still enable GLSLANG and Vulkan support.
+               (substitute* "qb/config.libs.sh"
+                 (("[$]HAVE_GLSLANG_HLSL") "notcare"))
+
+               ;; The configure script does not yet accept the extra arguments
+               ;; (like ‘CONFIG_SHELL=’) passed by the default configure phase.
+               (invoke
+                 "./configure"
+                 ,@(if (string-prefix? "armhf" (or (%current-target-system)
+                                                  (%current-system)))
+                       '("--enable-neon" "--enable-floathard")
+                       '())
+                 (string-append "--prefix=" out)
+                 ;; Non-free software are available through the core updater,
+                 ;; disable it.  See <https://issues.guix.gnu.org/38360>.
+                 ;; "--disable-update_cores"
+                 ;; "--disable-builtinmbedtls"
+                 ;; "--disable-builtinbearssl"
+                 ;; "--disable-builtinzlib"
+                 ;; "--disable-builtinflac"
+                 ;; "--disable-builtinglslang"
+								 )))))))
+    (inputs
+     (list alsa-lib
+           eudev
+           ffmpeg
+           flac
+           freetype
+           glslang
+           libxinerama
+           libxkbcommon
+           libxml2
+           libxrandr
+           libxv
+           mbedtls-lts
+           mesa
+           openal
+           openssl
+           pulseaudio
+           python
+           qtbase-5
+           sdl2
+           spirv-headers
+           spirv-tools
+           vulkan-loader
+           wayland
+           zlib))
+    (native-inputs
+     (list pkg-config wayland-protocols which))
+    (native-search-paths
+     (list (search-path-specification
+            (variable "LIBRETRO_DIRECTORY")
+            (separator #f)              ; single entry
+            (files '("lib/libretro")))))
+    (home-page "https://www.libretro.com/")
+    (synopsis "Reference frontend for the libretro API")
+    (description
+     "Libretro is a simple but powerful development interface that allows for
+the easy creation of emulators, games and multimedia applications that can plug
+straight into any libretro-compatible frontend.  RetroArch is the official
+reference frontend for the libretro API, currently used by most as a modular
+multi-system game/emulator system.")
+    (license license:gpl3+)))
