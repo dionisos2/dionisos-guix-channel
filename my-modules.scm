@@ -38,7 +38,34 @@
 						 (gnu packages sdl)
 						 (gnu packages compression)
 						 (gnu packages base)
+						 (guix build-system node)
+						 (guix gexp)
 						 )
+
+(define-public my-tiddlywiki
+  (package
+    (name "my-tiddlywiki")
+    (version "5.3.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri "https://registry.npmjs.org/tiddlywiki/-/tiddlywiki-5.3.3.tgz")
+       (sha256
+        (base32 "0z5j89hkbsnigab3zx89nfpya0lzsgk133yx7nv75c8n5k9hvbv8"))))
+    (build-system node-build-system)
+    (arguments
+     (list
+      #:tests? #f
+      #:phases #~(modify-phases %standard-phases
+                   (delete 'build)
+                   (add-after 'patch-dependencies 'delete-dev-dependencies
+                     (lambda _
+                       (delete-dependencies '("eslint")))))))
+    (home-page "https://github.com/Jermolene/TiddlyWiki5#readme")
+    (synopsis "a non-linear personal web notebook")
+    (description "a non-linear personal web notebook")
+    (license license:bsd-3)))
+
 
 (define-public my-python-xcffib
   (package
@@ -192,14 +219,6 @@ your own layouts, widgets, and built-in commands.")
                        '("--enable-neon" "--enable-floathard")
                        '())
                  (string-append "--prefix=" out)
-                 ;; Non-free software are available through the core updater,
-                 ;; disable it.  See <https://issues.guix.gnu.org/38360>.
-                 ;; "--disable-update_cores"
-                 ;; "--disable-builtinmbedtls"
-                 ;; "--disable-builtinbearssl"
-                 ;; "--disable-builtinzlib"
-                 ;; "--disable-builtinflac"
-                 ;; "--disable-builtinglslang"
 								 )))))))
     (inputs
      (list alsa-lib
