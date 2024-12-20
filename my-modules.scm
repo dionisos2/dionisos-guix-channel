@@ -40,6 +40,14 @@
 						 (gnu packages base)
 						 (guix build-system node)
 						 (guix gexp)
+						 (guix build-system go)
+						 (gnu packages golang-xyz)
+						 (gnu packages golang)
+						 (gnu packages golang-web)
+						 (gnu packages golang-check)
+						 (gnu packages version-control)
+						 (gnu packages golang-build)
+						 (guix build-system trivial)
 						 )
 
 (define-public my-tiddlywiki
@@ -261,3 +269,60 @@ straight into any libretro-compatible frontend.  RetroArch is the official
 reference frontend for the libretro API, currently used by most as a modular
 multi-system game/emulator system.")
     (license license:gpl3+)))
+
+(define-public my-chezmoi
+  (package
+    (name "my-chezmoi")
+    (version "2.52.2")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/twpayne/chezmoi")
+                    (commit (string-append "v" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0mgvzbh89l6r7w9zvrqvpb162f2dkncq4rsa613jawf2h5110b29"))))
+    (build-system trivial-build-system)
+		(arguments
+		 `(#:modules ((guix build utils) (guix build union))
+			 #:builder
+			 (begin
+				 (use-modules (guix build utils) (guix build union) (srfi srfi-26))
+				 (invoke "make" "install-from-git-working-copy")
+				 )
+			 )
+		 )
+
+    (native-inputs
+     (list go-github-com-alecthomas-chroma-v2
+           go-github-com-bmatcuk-doublestar-v2
+           go-github-com-charmbracelet-glamour
+           go-github-com-coreos-go-semver
+           go-github-com-google-go-github-v33
+           go-github-com-google-renameio
+           go-github-com-masterminds-sprig-v3
+           go-github-com-pelletier-go-toml
+           go-github-com-pkg-diff
+           go-github-com-rogpeppe-go-internal
+           go-github-com-sergi-go-diff
+           go-github-com-spf13-cobra
+           go-github-com-spf13-viper
+           go-github-com-stretchr-testify
+           go-github-com-twpayne-go-shell
+           go-github-com-twpayne-go-vfs
+           go-github-com-twpayne-go-vfsafero
+           go-github-com-twpayne-go-xdg-v3
+           go-github-com-zalando-go-keyring
+           go-github-go-git
+           go-go-etcd-io-bbolt
+           go-golang-org-x-oauth2
+           go-golang-org-x-sys
+           go-golang-org-x-term
+           go-gopkg-in-yaml-v2
+           go-howett-net-plist))
+    (home-page "https://www.chezmoi.io/")
+    (synopsis "Personal configuration files manager")
+    (description "This package helps to manage personal configuration files
+across multiple machines.")
+    (license license:expat)))
